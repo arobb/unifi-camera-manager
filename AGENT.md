@@ -37,7 +37,7 @@ container installed via a custom HA add-on repository — no SSH, no file copyin
 ├── repository.yaml                       ← HA add-on repository manifest
 ├── camera-poe/                           ← the HA add-on
 │   ├── config.yaml                       ← add-on manifest + options schema
-│   ├── Dockerfile                        ← FROM python:3.12-alpine (multi-arch via Docker Hub)
+│   ├── Dockerfile                        ← FROM python:3.11-alpine (multi-arch via Docker Hub)
 │   ├── DOCS.md                           ← shown in HA add-on info tab
 │   └── app/
 │       ├── requirements.txt
@@ -182,7 +182,8 @@ Implementation options (to be decided):
 
 ## Development notes
 
-- Python 3.12 inside the add-on (set in `build.yaml` base images).
+- Python 3.11 inside the add-on (`FROM python:3.11-alpine` in Dockerfile).
+  Cannot use 3.12+ until `adafruit-io` drops its `ez_setup.py` / `distutils` dependency.
 - No database; source of truth for desired camera state is the Adafruit IO feed.
   On restart the app re-reads the feed and re-applies the state.
 - `/data/` is persisted across add-on restarts by the Supervisor.
