@@ -15,17 +15,17 @@ init: false
 
 homeassistant_api: true
 
-ingress: true
-ingress_port: 8099
-panel_icon: mdi:cctv
-panel_title: Camera PoE
-
 options:
   adafruit_io_username: ""
   adafruit_io_key: ""
   adafruit_io_feed: "camera-poe"
+  camera_poe_switches: []
 
 schema:
   adafruit_io_username: str
   adafruit_io_key: password
   adafruit_io_feed: str
+  camera_poe_switches:
+    - selector:
+        entity:
+          domain: switch

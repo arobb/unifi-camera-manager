@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
 """Add-on entrypoint.
 
-Reads /data/options.json (written by the HA Supervisor from the add-on options
-form), then starts two long-running components:
-  - CameraPoeMQTT  — Adafruit IO MQTT listener, runs in a background thread
-  - web.run()      — Flask ingress web server, runs in the main thread
+Reads /data/options.json (written by the Supervisor from the add-on
+Configuration tab) and runs the Adafruit IO MQTT listener.
 """
 import json
 import logging
 import sys
-import threading
 from pathlib import Path
 
 logging.basicConfig(
@@ -26,10 +23,7 @@ def load_options() -> dict:
     try:
         return json.loads(OPTIONS_FILE.read_text())
     except FileNotFoundError:
-        log.error(
-            "%s not found — configure Adafruit IO credentials in the add-on options",
-            OPTIONS_FILE,
-        )
+        log.error("%s not found — configure the add-on options and restart", OPTIONS_FILE)
         sys.exit(1)
     except json.JSONDecodeError as exc:
         log.error("Failed to parse %s: %s", OPTIONS_FILE, exc)
@@ -47,24 +41,25 @@ def main() -> None:
         log.error(
             "Adafruit IO credentials are incomplete. "
             "Set adafruit_io_username, adafruit_io_key, and adafruit_io_feed "
-            "in the add-on options."
+            "in the add-on Configuration tab."
         )
         sys.exit(1)
 
+    switches = opts.get("camera_poe_switches", [])
+
     log.info("Starting Camera PoE Controller")
-    log.info("  Adafruit IO user : %s", username)
-    log.info("  Adafruit IO feed : %s", feed)
+    log.info("  Adafruit IO feed  : %s", feed)
+    log.info("  Switch entities   : %s", switches if switches else "(none configured)")
 
     from camera_poe import CameraPoeMQTT
-    import web
 
-    mqtt = CameraPoeMQTT(aio_username=username, aio_key=key, aio_feed=feed)
-
-    mqtt_thread = threading.Thread(target=mqtt.run, name="camera-poe-mqtt", daemon=True)
-    mqtt_thread.start()
-
-    # Web server blocks in the main thread; if it exits the add-on exits too.
-    web.run(port=8099)
+    mqtt = CameraPoeMQTT(
+        aio_username=username,
+        aio_key=key,
+        aio_feed=feed,
+        switches=switches,
+    )
+    mqtt.run()
 
 
 if __name__ == "__main__":

@@ -18,13 +18,11 @@ The project is packaged as a **Home Assistant add-on**.  The target hardware
 is a **Home Assistant Green** (HAOS on aarch64).  The add-on is a Docker
 container installed via a custom HA add-on repository — no SSH, no file copying.
 
-- The Supervisor writes add-on options to `/data/options.json`.
-- Persistent state (selected switch entities, last camera state) is written to
-  `/data/` by the add-on itself.
+- The Supervisor writes add-on options to `/data/options.json`.  All
+  configuration (credentials and switch entity IDs) comes from this file.
 - The HA REST API is available at `http://supervisor/core/api` authenticated
   with the `SUPERVISOR_TOKEN` environment variable (injected by the Supervisor
   when `homeassistant_api: true` is set in `config.yaml`).
-- The add-on exposes a web UI via HA ingress on port 8099.
 
 ---
 
@@ -41,9 +39,8 @@ container installed via a custom HA add-on repository — no SSH, no file copyin
 │   ├── DOCS.md                           ← shown in HA add-on info tab
 │   └── app/
 │       ├── requirements.txt
-│       ├── main.py                       ← entrypoint: reads options, starts threads
+│       ├── main.py                       ← entrypoint: reads options, runs MQTT
 │       ├── camera_poe.py                 ← MQTT listener + HA API calls
-│       ├── web.py                        ← Flask ingress UI
 │       └── unifi_switch.py              ← direct UniFi OS API (phase 2 only)
 └── adafruit-unifi/                       ← original daemon (gitignored, reference only)
 ```
@@ -56,48 +53,35 @@ container installed via a custom HA add-on repository — no SSH, no file copyin
 
 Add-on manifest.  Key fields:
 - `homeassistant_api: true` — grants access to HA REST API via `SUPERVISOR_TOKEN`
-- `ingress: true` / `ingress_port: 8099` — embeds the web UI in the HA sidebar
-- `schema` — defines the options form rendered in the HA add-on Configuration tab.
-  Current options: `adafruit_io_username` (str), `adafruit_io_key` (password),
-  `adafruit_io_feed` (str).
+- `schema` — defines the options form in the HA add-on Configuration tab.
+
+Current options:
+
+| Key | Schema type | Description |
+|-----|-------------|-------------|
+| `adafruit_io_username` | `str` | Adafruit IO account username |
+| `adafruit_io_key` | `password` | Adafruit IO API key (masked in UI) |
+| `adafruit_io_feed` | `str` | Feed slug |
+| `camera_poe_switches` | `- selector: entity: domain: switch` | List of HA switch entity IDs; renders an entity picker per entry in the Configuration tab |
 
 ### `camera-poe/app/main.py`
 
-Entry point.  Reads `/data/options.json`, validates credentials, starts the
-MQTT service in a daemon thread, then runs the Flask web server in the main
-thread.  If the web server exits the container exits (Supervisor restarts it).
+Entry point.  Reads `/data/options.json`, validates credentials, passes all
+options to `CameraPoeMQTT`, and calls `mqtt.run()` which blocks in the main
+thread.
 
 ### `camera-poe/app/camera_poe.py`
 
-**Class:** `CameraPoeMQTT`
+**Class:** `CameraPoeMQTT(aio_username, aio_key, aio_feed, switches)`
 
-Reads switch selection from `/data/switches.json` at call time (not cached),
-so the web UI's saved selection takes effect without a restart.
+`switches` is passed at construction from `options.json`; changing it requires
+an add-on restart (standard HA add-on behaviour).
 
 Key methods:
-- `set_cameras_on(bool)` — the sole actuator for camera power.  Reads current
-  HA entity state before calling `switch/turn_on` or `switch/turn_off` to avoid
-  no-op API calls.  Writes result to `/data/state.json`.
+- `set_cameras_on(bool)` — sole actuator for camera power.  Checks current HA
+  entity state before calling `switch/turn_on` or `switch/turn_off` to skip
+  no-op API calls.
 - `run()` — blocking MQTT loop with 30 s reconnect backoff.
-
-State file `/data/state.json` shape:
-```json
-{ "cameras": "on|off", "mqtt_connected": true, "last_action": "ISO8601", "error": null }
-```
-
-### `camera-poe/app/web.py`
-
-Flask application served on port 8099 (ingress).  Two routes:
-- `GET /` — renders the port selection page.  Calls `POST /api/template` on
-  the HA API using the same Jinja2 discovery template as
-  `tools/discover_poe_entities.py`.  Reads `/data/switches.json` to pre-check
-  the current selection.  Reads `/data/state.json` for the status banner.
-- `POST /save` — writes the checked entity IDs to `/data/switches.json`,
-  redirects to `/?saved=1`.
-
-The ingress proxy strips the HA path prefix before forwarding to Flask, so all
-routes are at `/` relative to the add-on.  Do not use `url_for()` with
-absolute URLs or `SERVER_NAME`.
 
 ### `camera-poe/app/unifi_switch.py`
 
@@ -123,16 +107,14 @@ Key API paths (relative to `https://{host}/`):
 
 Credentials are entered via the HA add-on Configuration tab.
 
-### Switch selection (`/data/switches.json`)
+### Switch selection (`camera_poe_switches` in `/data/options.json`)
 
-Plain JSON array of HA switch entity IDs, written by the ingress web UI:
+Plain JSON array of HA switch entity IDs, set in the add-on Configuration tab:
 ```json
 ["switch.front_camera_poe", "switch.driveway_camera_poe"]
 ```
 
-Set by the user via the Camera PoE panel in the HA sidebar.  The MQTT service
-reads this file on every `set_cameras_on` call, so changes take effect without
-a restart.
+Changing this requires an add-on restart (standard HA add-on behaviour).
 
 ---
 

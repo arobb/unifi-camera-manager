@@ -5,23 +5,24 @@ An Adafruit IO dashboard toggle provides the manual on/off interface.
 
 ## Setup
 
-### 1. Configure Adafruit IO credentials
+Open the add-on **Configuration** tab and fill in all fields, then click
+**Save** and **Start** the add-on.
 
-In the add-on **Configuration** tab, fill in:
-- **Adafruit IO username** — your io.adafruit.com login name
-- **Adafruit IO key** — found at io.adafruit.com → My Key
-- **Adafruit IO feed** — the slug of the feed backing your dashboard toggle
-  (e.g. `camera-poe`)
+### Adafruit IO credentials
 
-Click **Save**, then **Start** the add-on.
+| Field | Value |
+|-------|-------|
+| Adafruit IO username | Your io.adafruit.com login name |
+| Adafruit IO key | Found at io.adafruit.com → **My Key** |
+| Adafruit IO feed | The slug of the feed backing your dashboard toggle (e.g. `camera-poe`) |
 
-### 2. Select camera ports
+### Camera PoE switches
 
-Open the **Camera PoE** panel in the HA sidebar.  The page lists every
-PoE-capable switch port from the UniFi Network integration, grouped by switch.
-Check the ports that power your interior cameras and click **Save selection**.
+Click **Add** to add a switch entity for each camera port.  Each entry shows
+an entity picker — search for the port by its name or by `poe` to filter to
+PoE-capable ports from the UniFi Network integration.
 
-The add-on reads this selection immediately — no restart needed.
+The add-on requires a restart to pick up changes to this list.
 
 ## Requirements
 
@@ -33,17 +34,15 @@ The add-on reads this selection immediately — no restart needed.
 
 ## Troubleshooting
 
-**No ports appear in the Camera PoE panel**
-- Wait ~60 seconds after HA starts for the UniFi integration to finish loading,
-  then refresh the page.
-- Confirm the UniFi Network integration shows as connected:
+**No PoE entities appear in the entity picker**
+- Confirm the UniFi Network integration is connected:
   Settings → Devices & Services → UniFi Network.
 - Ensure PoE is enabled on the port in the UniFi console.
+- If the integration just loaded, wait ~60 seconds and try again.
 
-**Ports appear but don't respond to the toggle**
-- Check the add-on log (Log tab) for errors.
-- Confirm the Adafruit IO feed name matches the one in your dashboard toggle.
+**Ports configured but not responding to the toggle**
+- Check the add-on **Log** tab for errors.
+- Confirm the Adafruit IO feed name matches the toggle widget on your dashboard.
 
-**MQTT disconnected warning in status**
-- The add-on retries the Adafruit IO connection every 30 seconds automatically.
-  Check that the Adafruit IO credentials are correct.
+**MQTT keeps reconnecting**
+- Check that the Adafruit IO credentials are correct in the Configuration tab.

@@ -1,17 +1,13 @@
 """Adafruit IO MQTT listener → UniFi switch PoE control via HA REST API.
 
-Configuration is read at runtime from two files written by the Supervisor:
-  /data/options.json   — Adafruit IO credentials + feed name (from add-on options form)
-  /data/switches.json  — list of HA entity IDs to control (saved by the ingress web UI)
-
-State is written to /data/state.json so the ingress web UI can display it.
+Configuration is read from /data/options.json, written by the Supervisor
+from the add-on Configuration tab.  Relevant keys:
+  adafruit_io_username, adafruit_io_key, adafruit_io_feed
+  camera_poe_switches  — list of HA switch entity IDs to control
 """
-import json
 import logging
 import os
 import time
-from datetime import datetime
-from pathlib import Path
 
 import requests
 from Adafruit_IO import Client as AIO_Client
@@ -20,8 +16,6 @@ from Adafruit_IO.errors import RequestError
 
 log = logging.getLogger(__name__)
 
-SWITCHES_FILE = Path("/data/switches.json")
-STATE_FILE = Path("/data/state.json")
 HA_API = "http://supervisor/core/api"
 _SUPERVISOR_TOKEN = os.environ.get("SUPERVISOR_TOKEN", "")
 _RECONNECT_DELAY_S = 30
@@ -37,10 +31,11 @@ def _ha_headers() -> dict:
 class CameraPoeMQTT:
     """Watches an Adafruit IO feed and applies PoE state to HA switch entities."""
 
-    def __init__(self, aio_username: str, aio_key: str, aio_feed: str):
+    def __init__(self, aio_username: str, aio_key: str, aio_feed: str, switches: list):
         self._username = aio_username
         self._key = aio_key
         self._feed = aio_feed
+        self._switches = switches
         self._stop = False
 
     # ------------------------------------------------------------------
@@ -49,18 +44,15 @@ class CameraPoeMQTT:
 
     def set_cameras_on(self, cameras_on: bool) -> None:
         """Turn all configured camera PoE switch entities on or off."""
-        switches = self._load_switches()
-        if not switches:
-            log.warning("No switch ports configured — open the Camera PoE panel to select ports")
-            self._write_state(cameras_on, mqtt_connected=True, error="No ports configured")
+        if not self._switches:
+            log.warning("No switch ports configured — add entities under 'Camera PoE Switches' in the add-on Configuration tab")
             return
 
         service = "turn_on" if cameras_on else "turn_off"
         target = "on" if cameras_on else "off"
-        log.info("Setting camera PoE → %s (%d port(s))", target, len(switches))
+        log.info("Setting camera PoE → %s (%d port(s))", target, len(self._switches))
 
-        errors = []
-        for entity_id in switches:
+        for entity_id in self._switches:
             try:
                 resp = requests.get(
                     f"{HA_API}/states/{entity_id}",
@@ -82,29 +74,6 @@ class CameraPoeMQTT:
 
             except Exception as exc:
                 log.error("  Error setting %s: %s", entity_id, exc)
-                errors.append(str(exc))
-
-        self._write_state(cameras_on, mqtt_connected=True, error=errors[0] if errors else None)
-
-    # ------------------------------------------------------------------
-    # Internal helpers
-    # ------------------------------------------------------------------
-
-    def _load_switches(self) -> list[str]:
-        if SWITCHES_FILE.exists():
-            try:
-                return json.loads(SWITCHES_FILE.read_text())
-            except Exception:
-                pass
-        return []
-
-    def _write_state(self, cameras_on: bool, *, mqtt_connected: bool, error: str | None = None):
-        STATE_FILE.write_text(json.dumps({
-            "cameras": "on" if cameras_on else "off",
-            "mqtt_connected": mqtt_connected,
-            "last_action": datetime.now().isoformat(timespec="seconds"),
-            "error": error,
-        }))
 
     # ------------------------------------------------------------------
     # MQTT callbacks
@@ -155,7 +124,6 @@ class CameraPoeMQTT:
                 if self._stop:
                     break
                 log.warning("MQTT error: %s — retrying in %ds", exc, _RECONNECT_DELAY_S)
-                self._write_state(False, mqtt_connected=False, error=str(exc))
                 time.sleep(_RECONNECT_DELAY_S)
 
         log.info("MQTT listener stopped")

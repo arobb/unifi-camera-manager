@@ -29,8 +29,8 @@ Adafruit IO dashboard toggle
 
 The add-on connects to Adafruit IO over MQTT and calls HA's local REST API to
 toggle the PoE switch entities that the UniFi Network integration exposes.
-Port selection is done through an **ingress web page** in the HA sidebar —
-no YAML editing or file copying required.
+All configuration — credentials and port selection — is done through the
+add-on's **Configuration** tab in the HA UI.
 
 ---
 
@@ -38,18 +38,15 @@ no YAML editing or file copying required.
 
 ### 1. Add the custom repository
 
-In Home Assistant:
-
-**Settings → Add-ons → Add-on store → ⋮ (top-right) → Repositories**
-
-Paste the URL of this repository and click **Add**.
+In the HA add-on store, open the menu and choose **Repositories**.  Paste the
+URL of this repository and click **Add**.
 
 ### 2. Install the add-on
 
 The **Camera PoE Controller** add-on will appear in the store.  Click it,
 then click **Install**.
 
-### 3. Set Adafruit IO credentials
+### 3. Configure credentials and ports
 
 Open the add-on **Configuration** tab and fill in:
 
@@ -57,28 +54,25 @@ Open the add-on **Configuration** tab and fill in:
 |-------|-------|
 | Adafruit IO username | Your io.adafruit.com login name |
 | Adafruit IO key | Found at io.adafruit.com → **My Key** |
-| Adafruit IO feed | The feed slug backing your dashboard toggle (e.g. `camera-poe`) |
+| Adafruit IO feed | Feed slug backing your dashboard toggle (e.g. `camera-poe`) |
+| Camera PoE switches | One entry per camera port (entity picker, see below) |
+
+For **Camera PoE switches**, click **Add** for each port.  An entity picker
+appears — search for the port by name or type `poe` to filter to PoE switch
+entities from the UniFi Network integration.  Select the entity and repeat for
+each camera port.
 
 Click **Save**.
 
 ### 4. Start the add-on
 
-Click **Start**.  The add-on appears as **Camera PoE** in the HA sidebar once
-running.
-
-### 5. Select camera ports
-
-Open **Camera PoE** in the sidebar.  The page lists every PoE-capable switch
-port from the UniFi Network integration, **grouped by switch**.  Check the
-ports that power your interior cameras and click **Save selection**.
-
-The add-on reads the selection immediately — no restart needed.
+Click **Start**.  Check the **Log** tab to confirm it connects to Adafruit IO.
 
 ---
 
 ## Prerequisites
 
-- **Home Assistant** (OS, Supervised, or any install with the Supervisor)
+- **Home Assistant** with Supervisor support (OS or Supervised install)
 - **UniFi Network integration** configured in HA and connected to your Cloud
   Gateway
 - **Adafruit IO account** — free tier is sufficient.  You need a feed and a
@@ -90,43 +84,26 @@ The add-on reads the selection immediately — no restart needed.
 
 Use your Adafruit IO dashboard toggle as before:
 
-- **Toggle ON (1):** cameras powered — PoE set to Auto on all selected ports
-- **Toggle OFF (0):** cameras off — PoE disabled on all selected ports
+- **Toggle ON (1):** cameras powered — PoE set to Auto on all configured ports
+- **Toggle OFF (0):** cameras off — PoE disabled on all configured ports
 
-The change takes effect within a few seconds.  If the toggle is changed while
+The change takes effect within a few seconds.  If the toggle changes while
 the add-on is offline, the correct state is applied as soon as it reconnects.
-
----
-
-## Sidebar panel
-
-The **Camera PoE** panel in the HA sidebar serves two purposes:
-
-1. **Port selection** — shows all UniFi PoE ports grouped by switch, with
-   checkboxes.  Check the ports to control and click **Save selection**.
-
-2. **Status** — shows whether cameras are currently on or off, the last action
-   timestamp, and whether the Adafruit IO MQTT connection is active.
-
-No page refresh is needed after saving — the MQTT service picks up the new
-selection on the next feed update or add-on restart.
 
 ---
 
 ## Troubleshooting
 
-**No ports appear in the Camera PoE panel**
-- Wait ~60 seconds after HA starts for the UniFi integration to finish loading,
-  then refresh the page.
+**No PoE entities appear in the entity picker**
 - Confirm the UniFi Network integration is connected:
   Settings → Devices & Services → UniFi Network.
-- Confirm PoE is enabled on the port in the UniFi console.
+- Ensure PoE is enabled on the port in the UniFi console.
 
-**Ports listed but don't respond to the toggle**
+**Ports configured but not responding to the toggle**
 - Check the add-on **Log** tab for errors.
 - Confirm the Adafruit IO feed name matches the one in your dashboard toggle.
 
-**"MQTT disconnected" shown in the panel**
+**MQTT keeps reconnecting**
 - The add-on retries automatically every 30 seconds.  Check that Adafruit IO
   credentials are correct in the Configuration tab.
 
@@ -163,6 +140,5 @@ triggers.  The Adafruit IO toggle remains as a manual override.
         ├── requirements.txt
         ├── main.py             ← entrypoint
         ├── camera_poe.py       ← MQTT service + HA API calls
-        ├── web.py              ← ingress web server (port selection UI)
         └── unifi_switch.py     ← direct UniFi OS API client (phase 2)
 ```
