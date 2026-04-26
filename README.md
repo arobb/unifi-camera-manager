@@ -157,7 +157,6 @@ triggers.  The Adafruit IO toggle remains as a manual override.
 ├── repository.yaml             ← HA custom add-on repository manifest
 └── camera-poe/                 ← the add-on (installed by HA from this dir)
     ├── config.yaml             ← add-on manifest, options schema
-    ├── build.yaml              ← multi-arch base image config
     ├── Dockerfile
     ├── DOCS.md                 ← shown in the HA add-on info tab
     └── app/

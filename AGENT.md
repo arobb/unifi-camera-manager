@@ -37,8 +37,7 @@ container installed via a custom HA add-on repository — no SSH, no file copyin
 ├── repository.yaml                       ← HA add-on repository manifest
 ├── camera-poe/                           ← the HA add-on
 │   ├── config.yaml                       ← add-on manifest + options schema
-│   ├── build.yaml                        ← multi-arch Docker base images
-│   ├── Dockerfile
+│   ├── Dockerfile                        ← FROM python:3.12-alpine (multi-arch via Docker Hub)
 │   ├── DOCS.md                           ← shown in HA add-on info tab
 │   └── app/
 │       ├── requirements.txt
