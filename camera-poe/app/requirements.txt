@@ -1,0 +1,4 @@
+adafruit-io==2.7.1
+paho-mqtt==1.6.1
+requests>=2.31.0
+flask>=3.0.0

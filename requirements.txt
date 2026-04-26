@@ -1,0 +1,2 @@
+# The add-on's runtime dependencies are in camera-poe/app/requirements.txt.
+# This file is a placeholder so the repo root is recognisable as a Python project.
