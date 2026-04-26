@@ -18,13 +18,26 @@ Open the add-on **Configuration** tab and fill in all fields, then click
 
 ### Camera PoE switches
 
-Click **Add** for each camera port and type the HA entity ID of its PoE switch
-entity (e.g. `switch.front_camera_poe`).
+Click **Add** for each camera port and type its HA entity ID.
 
-To find entity IDs: **Developer Tools → States** and filter by `poe`, or browse
-**Settings → Devices & Services → UniFi Network → your switch → entities**.
+**To find the entity IDs:** start the add-on with this field empty and open
+the **Log** tab.  On every startup the add-on queries HA and prints all
+available UniFi PoE switch entities grouped by switch:
 
-The add-on requires a restart to pick up changes to this list.
+```
+INFO  --- Available UniFi PoE switch entities ---
+INFO    Living Room Switch
+INFO      switch.front_camera_poe       (Front Camera PoE)
+INFO      switch.hallway_camera_poe     (Hallway Camera PoE)
+INFO    Garage Switch
+INFO      switch.driveway_camera_poe    (Driveway Camera PoE)
+INFO    Copy the entity IDs above into 'Camera PoE switches' in the Configuration tab.
+INFO  -------------------------------------------
+```
+
+Copy the entity IDs you want to control into the Configuration tab, save,
+and restart the add-on.  The list refreshes on every restart so you can
+re-check it any time.
 
 ## Requirements
 

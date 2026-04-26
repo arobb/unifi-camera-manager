@@ -57,15 +57,32 @@ Open the add-on **Configuration** tab and fill in:
 | Adafruit IO feed | Feed slug backing your dashboard toggle (e.g. `camera-poe`) |
 | Camera PoE switches | One entry per camera port (entity picker, see below) |
 
-For **Camera PoE switches**, click **Add** for each camera port and type its
-HA entity ID (e.g. `switch.front_camera_poe`).  To find entity IDs, go to
-**Developer Tools → States** and filter by `poe`.
+For **Camera PoE switches**, leave the list empty for now and click **Save**.
 
 Click **Save**.
 
-### 4. Start the add-on
+### 4. Start the add-on and find your entity IDs
 
-Click **Start**.  Check the **Log** tab to confirm it connects to Adafruit IO.
+Click **Start**, then open the **Log** tab.  On every startup the add-on
+queries HA and prints all available UniFi PoE switch entities grouped by
+physical switch:
+
+```
+INFO  --- Available UniFi PoE switch entities ---
+INFO    Living Room Switch
+INFO      switch.front_camera_poe       (Front Camera PoE)
+INFO      switch.hallway_camera_poe     (Hallway Camera PoE)
+INFO    Garage Switch
+INFO      switch.driveway_camera_poe    (Driveway Camera PoE)
+INFO    Copy the entity IDs above into 'Camera PoE switches' in the Configuration tab.
+INFO  -------------------------------------------
+```
+
+### 5. Add your camera ports
+
+Go back to the **Configuration** tab.  For each camera port, click **Add**
+under **Camera PoE switches** and type the entity ID from the log
+(e.g. `switch.front_camera_poe`).  Click **Save**, then restart the add-on.
 
 ---
 
