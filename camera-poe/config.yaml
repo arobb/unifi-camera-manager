@@ -26,6 +26,4 @@ schema:
   adafruit_io_key: password
   adafruit_io_feed: str
   camera_poe_switches:
-    - selector:
-        entity:
-          domain: switch
+    - str

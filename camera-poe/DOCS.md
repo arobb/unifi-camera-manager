@@ -18,9 +18,11 @@ Open the add-on **Configuration** tab and fill in all fields, then click
 
 ### Camera PoE switches
 
-Click **Add** to add a switch entity for each camera port.  Each entry shows
-an entity picker — search for the port by its name or by `poe` to filter to
-PoE-capable ports from the UniFi Network integration.
+Click **Add** for each camera port and type the HA entity ID of its PoE switch
+entity (e.g. `switch.front_camera_poe`).
+
+To find entity IDs: **Developer Tools → States** and filter by `poe`, or browse
+**Settings → Devices & Services → UniFi Network → your switch → entities**.
 
 The add-on requires a restart to pick up changes to this list.
 

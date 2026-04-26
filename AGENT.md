@@ -62,7 +62,7 @@ Current options:
 | `adafruit_io_username` | `str` | Adafruit IO account username |
 | `adafruit_io_key` | `password` | Adafruit IO API key (masked in UI) |
 | `adafruit_io_feed` | `str` | Feed slug |
-| `camera_poe_switches` | `- selector: entity: domain: switch` | List of HA switch entity IDs; renders an entity picker per entry in the Configuration tab |
+| `camera_poe_switches` | `- str` | List of HA switch entity IDs; renders a text input per entry in the Configuration tab. Note: `selector:` syntax is valid in HA automations but **not** in add-on `config.yaml` schemas — using it causes the add-on to fail Supervisor validation and disappear from the store. |
 
 ### `camera-poe/app/main.py`
 
